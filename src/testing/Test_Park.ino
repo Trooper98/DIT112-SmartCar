@@ -9,7 +9,7 @@ const int TRIGGER_PIN = 4;
 const int ECHO_PIN = 5;
 const int encoderPin = 2;
 const int TRIGGER_PIN2 = 4;
-const int ECHO_PIN2 = 7;
+const int ECHO_PIN2 = 7;// Pack one
 void setup() {
   Serial.begin(9600);
   gyro.attach();
@@ -64,4 +64,3 @@ void makeParkL(){
 
 
 Add CommentCollapse 
-
