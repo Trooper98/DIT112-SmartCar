@@ -1,5 +1,3 @@
-// By M Nazeeh Alhosary
-
 #include <Smartcar.h>
 #include <Servo.h>
 #include <SoftwareSerial.h> // I added this library only for the Bluetooth module.
@@ -15,8 +13,9 @@ SR04 ultrasonicSensorFront;
 
 SoftwareSerial Bluetooth(52, 53); // Initialize the Bluetooth module. RX on 52, and TX on 53
 
-static boolean startCar = true;
+boolean startCar = true;
 static boolean ServoBack = true;
+static int counterRotate=0;
 char input;
 int ledPin = 50;
 const int TRIGGER_PIN = A1;   // Front-Right Sensor
@@ -27,7 +26,7 @@ const int ECHO_PINB = 7;      // Back Sensor
 
 const int TRIGGER_PINF = 44;  // Front Sensor
 const int ECHO_PINF = 45;     // Front Sensor
-
+  int des = 200;
 const int encoderPin = 2;     // For Encoder
 
 long duration, durationR, durationF, durationB; // To calculate the duration for each sensor, then we can know the actual distance
@@ -48,6 +47,7 @@ void setup() {
 }
 
 void loop() {
+
 handleInput(); // Run handleInput which takes inputs from the bluetooth module
 }
 void handleInput() { //handle serial input if there is any
@@ -55,8 +55,9 @@ void handleInput() { //handle serial input if there is any
     char input =  Bluetooth.read(); //read everything that has been received from the bluetooth
     Serial.println(input);
     switch (input) {
+
       case 'l': //rotate counter-clockwise going forward
-        car.setSpeed(70);
+         car.setSpeed(70);
         car.setAngle(-75);
         break;
 
@@ -83,18 +84,13 @@ void handleInput() { //handle serial input if there is any
         car.setAngle(0);
         break;
        case 'p': // Find an empty spot to park in it.
-
        //startCar is a Boolean attribute, we need it to break the loop.
-     if (startCar){ // To keep the findPlace method works until park, we call the method in the while loop
-       while (startCar){
+     while (startCar){ // To keep the findPlace method works until park, we call the method in the while loop
         findPlace(); // Call findPlace method
         }
-        }
-        else { // otherwise breake this case and call the default case tostop
-          input=='s';
-          }
-
-        break;
+       startCar=true;
+       return;
+       break;
 
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
@@ -105,38 +101,29 @@ void handleInput() { //handle serial input if there is any
 }
 
 void findPlace(){
-if(calculateDistanceRight() == 0 || calculateDistanceRight()> 20 ){
+  if(calculateDistanceRight() == 0 || calculateDistanceRight()> 20 ){
   /*if statement to check the distance in from the Front-Right Sensor
   if the distance == 0 means if there is distance more than the ultrasonic Sensor range  NOT equals to zero */
   encoder.begin();                 // put the encoder in zero, and  Sart count the distance from the encoder (Wheels)
   car.setMotorSpeed(50,50);        // Set car setSpeed to 50
   while(calculateDistanceRight() == 0 || calculateDistanceRight() > 20){ // Same condition of if statement's condition , To counting the distance
-     // car.setMotorSpeed(40,40);  // Reduce the speed to notes that the car is counting.
-     /*
-      // Print
-     Serial.print(" The Encoder is: ");
-     Serial.println(encoder.getDistance());
-     Serial.print(" The Distance is: ");
-     Serial.println(calculateDistanceRight());
-     */
-    if(encoder.getDistance() > 30) {  // if the car goes 30cm and the if statement does not break
+    if(encoder.getDistance() > 35) {  // if the car goes 30cm and the if statement does not break
       car.setSpeed(0);                // Stop the car by setting the speed to zero
       car.setAngle(0);                // Stop any rotate
       delay(500);                     // Wait 500 millisecond
+      gyro.begin();
       rotateLeft();                   // Call method rotateLeft, the car should be like ( \ )
-      callServo();                    // Call method callServo to go backward by checking with the servo and ultrasonicSensorBack
+      callServo();                    // Call method callServo to go backward by checking with the servo and ultrasonicSensorBack;
       rotateRight();                    // Call method rotateRight, the car should be like ( | )
       moveForward();                  // Call method moveForward, to move a little bit forward.
-     // makeParkBetter();             // Coming soon (( in process))
+      startCar=false;                // Set the boolean variable startCar to false to break the while loop
+      Serial.println("Found");
       car.setSpeed(0);                // Stop the car by setting the speed to zero
       delay(200);                     // Wait 200 millisecond
-      startCar==false;                // Set the boolean variable startCar to false to break the while loop
-           while(true){               // To stop this method, we use like this while loop
+         return;
+          /* while(true){               // To stop this method, we use like this while loop
             handleInput();            // Call the main method again
-              }
-              /*
-               * Instead to use the while loop we can just put return; to stop the method
-                */
+              } */
       }
     }
   }
@@ -146,61 +133,41 @@ if(calculateDistanceRight() == 0 || calculateDistanceRight()> 20 ){
    }
   }
 
-
-  void rotateLeft(){
-     moveWithRotate();   // Instead to write four lines of code each time, just call the moveWithRotate method.
-     car.setSpeed(0);
-     delay(200);         // Wait 200 millisecond
-     moveWithRotate();
-     car.setSpeed(0);
-     delay(200);         // Wait 200 millisecond
-     moveWithRotate();
-     car.setSpeed(0);
-     delay(200);         // Wait 200 millisecond
-     moveWithRotate();
-     car.setSpeed(0);
-
-     delay(500);         // Wait 500 millisecond
-     gyro.update();      // Update the Gyroscope
-
-  }
-
-void moveWithRotate(){
-  car.setSpeed(-40);   // Move backward in speed -40, Note Minus to move backward
-  delay(50);           // Wait 50 millisecond
-  gyro.update();       // Update the Gyroscope to get the right dimension in X,Y,Z for the car
-  car.rotate(-5);      // Rotate to left in -5 degree, Note Minus to turn left
+void rotateLeft(){
+    int gs = gyro.getAngularDisplacement();
+    gyro.update();
+    while(gs > 340 || gs == 0) {
+        gyro.update();
+        gs = gyro.getAngularDisplacement();
+        car.rotate(-5);
+        car.setSpeed(0);
+        delay(400);
+        counterRotate=counterRotate+1;
+    }
   }
 
 void rotateRight(){
-   delay(400);      // Wait 4500 millisecond
-   gyro.update();   // Update the Gyroscope
-   car.rotate(5);   // Rotate to left in 5 degree, Note Minus to turn right
-
-   delay(400);      // Wait 4500 millisecond
-   gyro.update();   // Update the Gyroscope
-   car.rotate(5);   // Rotate to left in 5 degree, Note Minus to turn right
-
-
-   delay(400);      // Wait 4500 millisecond
-   gyro.update();   // Update the Gyroscope
-   car.rotate(5);   // Rotate to left in 5 degree, Note Minus to turn right
-
-
-   delay(400);      // Wait 4500 millisecond
-   gyro.update();   // Update the Gyroscope
-   car.rotate(5);   // Rotate to left in 5 degree, Note Minus to turn right
-
-   delay(400);      // Wait 400 millisecond
+  gyro.update();
+  int gs = gyro.getAngularDisplacement();
+  while(  counterRotate!=2  ) {
+    gyro.update();
+    car.rotate(5);
+    car.setSpeed(0);
+    delay(400);
+    counterRotate=counterRotate-1;
+  }
 }
 
 void callServo(){
+  Serial.println("Call Servo");
   /*This method will call the servo method, then if the servo method is done,
   it will make a double check for the ultrasonicSensorBack distance*/
   while(calculateDistanceBack()>10){ // Check the ultrasonicSensorBack distance if it's greater than 10 run the servo
+          Serial.println("Call Servo While");
           if (ServoBack){
           Serial.println("While");
-          RunServo();}
+            RunServo();
+          }
           else if (ServoBack==false){
           return;
           }
@@ -226,11 +193,11 @@ void callServo(){
 }
 
 void RunServo(){
+Serial.println("RUN SERVO");
   for(int i=200;i>40;i-=5){ // Turn servor from right to left from angle 200 to angle 40
   myServo.write(i);         // Move the servor to angle i
   delay(30);                //  Wait 30 millisecond
   int distance = calculateDistanceBack();
-
       if (distance && distance < 10) {            // Check the distance each time if it less than 10
           delay(20);                              // Wait 20 millisecond
           if (distance && distance < 10) {        // A double checking also
@@ -238,11 +205,9 @@ void RunServo(){
              return;
           }
        }
-
   }
   Serial.println("Go Back");
    moveBackward();                            // If the whole objects in the given angle are greater than 10cm then call moveBackward to move backward 7cm
-
   for(int i=40;i<=200;i+=5){                // Turn servor back from left to right from angle 40 to angle 200, and do same thing
   myServo.write(i);
   delay(30);
@@ -255,8 +220,6 @@ void RunServo(){
        }
        }
   }
-  Serial.println("Go Back");
-  moveBackward();
 }
 int calculateDistanceBack(){  // To calculate the Back distance faster than getDistance() method
   digitalWrite(TRIGGER_PINB, LOW);
@@ -266,7 +229,7 @@ int calculateDistanceBack(){  // To calculate the Back distance faster than getD
   digitalWrite(TRIGGER_PINB, LOW);
   durationB = pulseIn(ECHO_PINB, HIGH);
   distanceB = durationB*0.034/2;
-  return distance;
+  return distanceB;
  }
 
 int calculateDistanceRight(){   // To calculate the Right distance faster than getDistance() method
@@ -293,7 +256,7 @@ int calculateDistanceFront(){   // To calculate the Front distance faster than g
  }
 
 void moveBackward(){ // Move backword 7cm
-  car.go(-7);
+  car.go(-6);
   }
 
 void moveForward(){ // Move forward quarter of the Front distance
@@ -304,38 +267,4 @@ void moveForward(){ // Move forward quarter of the Front distance
     int distanceF = calculateDistanceFront() / 3;
     delay(200);
   car.go(distanceF);
-}
-
-void makeParkBetter(){ // In process
-  int distanceRight = calculateDistanceRight();
-  int distanceBack = calculateDistanceBack();
-  int distanceFront = calculateDistanceFront();
-  if (( distanceRight && distanceRight>10 ) && (distanceBack && distanceBack>10) && (distanceFront && distanceFront>10) ){
-      car.setSpeed(-40);
-      delay(50);
-      gyro.update();
-      car.rotate(-5);
-      car.rotate(-5);
-      car.setSpeed(0);
-      delay(200);
-      car.go(-5);
-      delay(500);
-      car.setSpeed(40);
-      delay(50);
-      gyro.update();
-      car.rotate(5);
-      car.rotate(5);
-      car.setSpeed(0);
-      car.go(5);
-
-    }
-   /* Serial.print("The distance Right is: ");
-    Serial.println(distanceR);
-    delay(200);
-    Serial.print("The distance Back is: ");
-    Serial.println(distanceB);
-   delay(200);
-    Serial.print("The distance Front is: ");
-    Serial.println(distanceF);
-    delay(200); */
 }
