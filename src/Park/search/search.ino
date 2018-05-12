@@ -33,12 +33,14 @@ boolean angleSet = true;
 boolean mover = true;
 boolean searching = true;
 boolean parking = true;
-boolean rp = true;
+boolean enteringParkSpace = true;
+boolean reversing = true;
 
 const int carWidth = 20;
 const int carLength = 60;
 const int servoBack = 80;
 const int servoRight = 200;
+const int servoPark = 150;
 
 char userInp;
 
@@ -69,12 +71,24 @@ void remoteControl() {
   userInp = Serial.read();
   switch (userInp) {
     case 'w'://forward
+      moveCar(10, 50);
+      resetDependancies();
       break;
     case 'a'://left
+      car.setSpeed(0);
+      gyro.update();
+      car.rotate(-25);
+      resetDependancies();
       break;
     case 'd'://right
+      car.setSpeed(0);
+      gyro.update();
+      car.rotate(25);
+      resetDependancies();
       break;
     case 's'://backwards
+      moveCar(10, -50);
+      resetDependancies();
       break;
     case 'p'://park
       resetDependancies();
@@ -86,7 +100,11 @@ void remoteControl() {
       break;
     case 'e':
       resetDependancies();
-      rotatePark();
+      enterParkingSpace();
+      break;
+    case 'c':
+      correctAngle();
+      resetDependancies();
       break;
   }
 }
@@ -96,9 +114,8 @@ void park() {
   if (parking == true) {
     search();
     delay(500);
-    rotatePark();
+    enterParkingSpace();
     delay(500);
-    //moveCar(35, -30);
     correctAngle();
     delay(500);
     parking = false;
@@ -135,7 +152,7 @@ void search() {
   correctAngle();
   angleSet = true;//set to true for the next angle correctment
   jumpStart(true);
-  car.setSpeed(30);
+  car.setSpeed(40);
   int rightSpace = distanceRight();
   while (searching == true) {
     car.updateMotors();
@@ -189,25 +206,31 @@ void correctAngle() {
   }
 }
 
-void rotatePark() {
-  Serial.println("in rotatePark...");
-  int counter = 0; //controls forloop
-  int gDisplacement = gyro.getAngularDisplacement();
-  gyro.update();
+void enterParkingSpace() {
+  Serial.println("in enterParkingSpace...");
+  int count = 0;
+  if (enteringParkSpace == true) {
+    car.rotate(-30);
+    gyro.update();
+    reverse();
+    enteringParkSpace = false;
+  }
+}
 
-  if (rp == true) {
-    for (int i = 0; i < 4; i++) {
-      jumpStart(false);
-      car.setSpeed(-30);
-      gyro.update();
-      car.rotate(-4);
-      counter ++;
+void reverse() {
+  myServo.write(servoPark);
+  int back = distanceBack();
+  Serial.print(back);
+  while (reversing) {
+    back = distanceBack();
+    if (back >= 10) {
+      moveCar(5, -40);
+      mover = true;
       delay(500);
-    }
-    if (counter <= 4) {
+    } else {
+      car.rotate(25);
       car.setSpeed(0);
-      rp = false;
-      moveCar(25, -40);
+      reversing = false;
     }
   }
 }
@@ -268,5 +291,6 @@ void resetDependancies() {
   mover = true;
   searching = true;
   parking = true;
-  rp = true;
+  enteringParkSpace = true;
+  reversing = true;
 }
