@@ -160,7 +160,7 @@ void park() {
     search();
     delay(500);
     enterParkingSpace();
-    delay(200);
+    delay(500);
     correctAngle();
     delay(500);
     parking = false;
@@ -261,7 +261,6 @@ void reverse() {
       mover = true;
       delay(500);
     } else {
-      rotateOnSpot(25);
       car.setSpeed(0);
       reversing = false;
     }
