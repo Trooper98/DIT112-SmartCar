@@ -37,6 +37,7 @@ boolean enteringParkSpace = true;
 boolean reversing = true;
 
 const int carSpeed = 40;
+const int motorSpeed = 80;
 const int carWidth = 20;
 const int carLength = 60;
 const int servoBack = 80;
@@ -63,50 +64,93 @@ void setup() {
 //---------------------------------------------------------------------------------------------------
 void loop() {
   // put your main code here, to run repeatedly:
-  remoteControl();
+  //remoteControl();
+  park();
 }
 //---------------------------------------------------------------------------------------------------
 
 void remoteControl() {
-  Serial.println("in remote...");
-  userInp = Serial.read();
-  switch (userInp) {
-    case 'w'://forward
-      moveCar(10, 50);
-      resetDependancies();
-      break;
-    case 'a'://left
-      car.setSpeed(0);
-      gyro.update();
-      car.rotate(-25);
-      resetDependancies();
-      break;
-    case 'd'://right
-      car.setSpeed(0);
-      gyro.update();
-      car.rotate(25);
-      resetDependancies();
-      break;
-    case 's'://backwards
-      moveCar(10, -50);
-      resetDependancies();
-      break;
-    case 'p'://park
-      resetDependancies();
-      park();
-      break;
-    case 'r'://rotate car in park mode
-      resetDependancies();
-      search();
-      break;
-    case 'e':
-      resetDependancies();
-      enterParkingSpace();
-      break;
-    case 'c':
-      correctAngle();
-      resetDependancies();
-      break;
+  if (Serial.available()) {
+    Serial.println("in remote...");
+    userInp = Serial.read();
+    switch (userInp) {
+      case 'w'://forward
+        moveCar(10, 50);
+        resetDependancies();
+        break;
+      case 'a'://left
+        car.setSpeed(0);
+        gyro.update();
+        rotateOnSpot(-25);
+        resetDependancies();
+        break;
+      case 'd'://right
+        car.setSpeed(0);
+        gyro.update();
+        rotateOnSpot(25);
+        resetDependancies();
+        break;
+      case 's'://backwards
+        moveCar(10, -50);
+        resetDependancies();
+        break;
+      case 'p'://park
+        resetDependancies();
+        park();
+        break;
+      case 'r'://rotate car in park mode
+        resetDependancies();
+        search();
+        break;
+      case 'e':
+        resetDependancies();
+        enterParkingSpace();
+        break;
+      case 'c':
+        rotateOnSpot(-20);
+        break;
+    }
+  } else if (Bluetooth.available()) {
+    char input =  Bluetooth.read(); //read everything that has been received from the bluetooth
+    Serial.println(input);
+    switch (input) {
+
+      case 'l': //rotate counter-clockwise going forward
+        car.setSpeed(70);
+        car.setAngle(-75);
+        break;
+      case 'r': //turn clock-wise
+        car.setSpeed(70);
+        car.setAngle(75);
+        break;
+      case 'f': //go ahead
+        car.setSpeed(75);
+        car.setAngle(0);
+        break;
+      case 'w': //go ahead until if there is any object in 30cm stop
+        while (distanceFront() > 30) {
+          Serial.println(distanceFront() );
+          car.setSpeed(75);
+          car.setAngle(0);
+        }
+        break;
+      case 'b': //go back
+        car.setSpeed(-70);
+        car.setAngle(0);
+        break;
+      case 'p': // Find an empty spot to park in it.
+        //startCar is a Boolean attribute, we need it to break the loop.
+        while (startCar) { // To keep the findPlace method works until park, we call the method in the while loop
+          park(); // Call findPlace method
+        }
+        startCar = true;
+        return;
+        break;
+      // In all cases I put the letter "s" as the stop case ((default case))
+      default: //if you receive something that you don't know, just stop
+        car.setSpeed(0);
+        car.setAngle(0);
+    }
   }
 }
 
@@ -116,10 +160,111 @@ void park() {
     search();
     delay(500);
     enterParkingSpace();
-    delay(500);
+    delay(200);
     correctAngle();
     delay(500);
     parking = false;
+  }
+}
+
+void search() {
+  Serial.println("in search...");
+  //correctAngle();
+  int rightSpace;
+  int rightLenght;
+  while (searching == true) {
+    //angleSet = true;//set to true for the next angle correctment
+    car.setSpeed(carSpeed);
+    rightSpace = distanceRight();
+    if (rightSpace == 0 || rightSpace > carWidth) {
+      //if there is space left
+      Serial.println("found right space");
+      car.setSpeed(carSpeed - 10);
+      encoder.begin();
+      while ((rightSpace == 0 || rightSpace > carWidth) && searching == true) {//while right is free and checking length
+        rightSpace = distanceRight();
+        //while there is space
+        Serial.println("checking right length");
+        rightLenght = encoder.getDistance();
+        if (rightLenght > carLength) {
+          Serial.println("FOUND");
+          //check length... if length !enough exit
+          searching = false;
+          car.setSpeed(0);
+        }
+      }
+    } else {
+      Serial.println("NOTHING");
+      car.setSpeed(carSpeed);
+    }
+  }
+}
+
+void correctAngle() {
+  Serial.println("in correctAngle...");
+  myServo.write(servoRight);
+
+  if (angleSet == true) {
+    /*angle*/
+    int front = distanceRight();//front right side
+    int back = distanceBack() - 2;/*the varieble, "back", works for the back of the car as well as the back right, additionally, subtracting 2 helps with the significant distance of the sensors on the car*/
+    int rightSideCar = front - back;
+
+    Serial.println(rightSideCar);
+
+    while (rightSideCar > 3 || rightSideCar < -2 ) {
+      //correcting angle
+      if (front > back) {
+        car.setSpeed(0);
+        rotateOnSpot(1);
+        delay(100);
+      } else if (back > front) {
+        car.setSpeed(0);
+        rotateOnSpot(-1);
+        delay(100);
+      }
+
+      //correcting cars angle
+      rightSideCar = front - back;//cars right side
+      front = distanceRight();//front right
+      back = distanceBack() - 2;//back right (subtracted 2 because of the difference in position)
+
+      if (rightSideCar < 3 || rightSideCar > -2 ) {
+        angleSet = false;
+      }
+    }
+  }
+}
+
+void enterParkingSpace() {
+  Serial.println("in enterParkingSpace...");
+  int count = 0;
+  if (enteringParkSpace == true) {
+    delay(500);
+    rotateOnSpot(-20);
+    gyro.update();
+    reverse();
+    delay(500);
+    rotateOnSpot(20);
+    enteringParkSpace = false;
+  }
+}
+
+void reverse() {
+  myServo.write(servoPark);
+  int back = distanceBack();
+  Serial.print(back);
+  while (reversing) {
+    back = distanceBack();
+    if (back >= 10) {
+      moveCar(5, -carSpeed);
+      mover = true;
+      delay(500);
+    } else {
+      rotateOnSpot(25);
+      car.setSpeed(0);
+      reversing = false;
+    }
   }
 }
 
@@ -146,94 +291,6 @@ void moveCar(int distance , int carSpeed) {
   }
   mover = false;
   car.setMotorSpeed(0, 0);
-}
-
-void search() {
-  Serial.println("in search...");
-  correctAngle();
-  angleSet = true;//set to true for the next angle correctment
-  jumpStart(true);
-  car.setSpeed(carSpeed);
-  int rightSpace = distanceRight();
-  while (searching == true) {
-    car.updateMotors();
-    if (rightSpace == 0 || rightSpace < carWidth) {
-      rightSpace = distanceRight();
-    } else if (rightSpace == 0 || rightSpace > carWidth) {
-      encoder.begin();
-      int distanceTraveled = encoder.getDistance();
-      while (distanceTraveled < carLength) {
-        distanceTraveled = encoder.getDistance();
-      }
-      car.setSpeed(0);
-      searching = false;
-    }
-  }
-}
-
-void correctAngle() {
-  Serial.println("in correctAngle...");
-  myServo.write(servoRight);
-
-  if (angleSet == true) {
-    /*angle*/
-    int front = distanceRight();//front right side
-    int back = distanceBack() - 2;/*the varieble, "back", works for the back of the car as well as the back right, additionally, subtracting 2 helps with the significant distance of the sensors on the car*/
-    int rightSideCar = front - back;
-
-    Serial.println(rightSideCar);
-
-    while (rightSideCar > 3 || rightSideCar < -2 ) {
-      //correcting angle
-      if (front > back) {
-        car.setSpeed(0);
-        car.rotate(1);
-        delay(100);
-      } else if (back > front) {
-        car.setSpeed(0);
-        car.rotate(-1);
-        delay(100);
-      }
-
-      //correcting cars angle
-      rightSideCar = front - back;//cars right side
-      front = distanceRight();//front right
-      back = distanceBack() - 2;//back right (subtracted 2 because of the difference in position)
-
-      if (rightSideCar < 3 || rightSideCar > -2 ) {
-        angleSet = false;
-      }
-    }
-  }
-}
-
-void enterParkingSpace() {
-  Serial.println("in enterParkingSpace...");
-  int count = 0;
-  if (enteringParkSpace == true) {
-    car.rotate(-30);
-    gyro.update();
-    reverse();
-    enteringParkSpace = false;
-  }
-}
-
-void reverse() {
-  myServo.write(servoPark);
-  int back = distanceBack();
-  Serial.print(back);
-  while (reversing) {
-    back = distanceBack();
-    if (back >= 10) {
-      moveCar(5, -carSpeed);
-      mover = true;
-      delay(500);
-    } else {
-      car.rotate(25);
-      car.setSpeed(0);
-      reversing = false;
-    }
-  }
 }
 
 int distanceBack() { // To calculate the Back distance faster than getDistance() method
@@ -289,7 +346,32 @@ void resetDependancies() {
   reversing = true;
 }
 
-
+void rotateOnSpot(int targetDegrees) {
+  targetDegrees %= 360; //put it on a (-360,360) scale
+  if (!targetDegrees) return; //if the target degrees is 0, don't bother doing anything
+  /* Let's set opposite speed on each side of the car, so it rotates on spot */
+  if (targetDegrees > 0) { //positive value means we should rotate clockwise
+    car.setMotorSpeed(motorSpeed, -motorSpeed); // left motors spin forward, right motors spin backward
+  } else { //rotate counter clockwise
+    car.setMotorSpeed(-motorSpeed, motorSpeed); // left motors spin backward, right motors spin forward
+  }
+  unsigned int initialHeading = gyro.getAngularDisplacement(); //the initial heading we'll use as offset to calculate the absolute displacement
+  int degreesTurnedSoFar = 0; //this variable will hold the absolute displacement from the beginning of the rotation
+  while (abs(degreesTurnedSoFar) < abs(targetDegrees)) { //while absolute displacement hasn't reached the (absolute) target, keep turning
+    gyro.update(); //update to integrate the latest heading sensor readings
+    int currentHeading = gyro.getAngularDisplacement(); //in the scale of 0 to 360
+    if ((targetDegrees < 0) && (currentHeading > initialHeading)) { //if we are turning left and the current heading is larger than the
+      //initial one (e.g. started at 10 degrees and now we are at 350), we need to substract 360, so to eventually get a signed
+      currentHeading -= 360; //displacement from the initial heading (-20)
+    } else if ((targetDegrees > 0) && (currentHeading < initialHeading)) { //if we are turning right and the heading is smaller than the
+      //initial one (e.g. started at 350 degrees and now we are at 20), so to get a signed displacement (+30)
+      currentHeading += 360;
+    }
+    degreesTurnedSoFar = initialHeading - currentHeading; //degrees turned so far is initial heading minus current (initial heading
+    //is at least 0 and at most 360. To handle the "edge" cases we substracted or added 360 to currentHeading)
+  }
+  car.stop(); //we have reached the target, so stop the car
+}
 //Testing--------------------------------------------------------------------------------------------------
 
 void correctPlacement() {
