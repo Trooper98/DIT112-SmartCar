@@ -63,7 +63,7 @@ void setup() {
   gyro.begin();                                          // Start Gyroscope counting
   car.begin(encoder, gyro);
 
-   Serial.write(0xAA);
+  Serial.write(0xAA);
 
   Serial.write(0x37);
 
@@ -78,6 +78,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   //remoteControl();
   park();
+  //voiceCommand();
+
 }
 //---------------------------------------------------------------------------------------------------
 
@@ -153,7 +155,7 @@ void remoteControl() {
       case 'p': // Find an empty spot to park in it.
         //startCar is a Boolean attribute, we need it to break the loop.
         park();
-        enterParkingSpace();
+        resetDependancies();
         break;
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
@@ -163,22 +165,19 @@ void remoteControl() {
   }
 }
 
-void voiceCommand(){
-  while(Serial.available()) {
-
-  com = Serial.read();
-Serial.println(com);
-  switch(com) {
-
-      case 0x15:  
-      
-      park();
-      
-      break;
-
-            }
-      }
+void voiceCommand() {
+  while (Serial.available()) {
+    Serial.println("in voice command");
+    com = Serial.read();
+    Serial.println(com);
+    switch (com) {
+      case 0x15:
+        park();
+        resetDependancies();
+        break;
+    }
   }
+}
 
 void park() {
   Serial.println("in park...");
@@ -249,7 +248,7 @@ void correctAngle() {
         car.setSpeed(0);
         rotateOnSpot(-1);
         delay(100);
-      }*/
+        }*/
 
       //correcting cars angle
       rightSideCar = front - back;//cars right side
@@ -268,20 +267,24 @@ void enterParkingSpace() {
   int count = 0;
   if (enteringParkSpace == true) {
     delay(500);
-    rotateOnSpot(-20);
+    rotateParkingCar(-5);
     gyro.update();
     reverse();
-    delay(500);
-    rotateOnSpot(5);
-    delay(100);
-    rotateOnSpot(5);
-    delay(100);
-    rotateOnSpot(5);
-    delay(100);
-    rotateOnSpot(5);
+    rotateParkingCar(5);
     enteringParkSpace = false;
   }
 }
+
+void rotateParkingCar(int angle){
+  delay(500);
+    rotateOnSpot(angle);
+    delay(100);
+    rotateOnSpot(angle);
+    delay(100);
+    rotateOnSpot(angle);
+    delay(100);
+    rotateOnSpot(angle);
+    }
 
 void reverse() {
   myServo.write(servoPark);
@@ -452,7 +455,7 @@ void correctPlacement() {
     }
   }
 }
-void gyroControl(){
+void gyroControl() {
   gyro.begin();
   int gryoD = gyro.getAngularDisplacement();
-  }
+}
