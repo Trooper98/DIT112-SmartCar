@@ -1,6 +1,8 @@
 #include <Smartcar.h>
 #include <Servo.h>
 #include <SoftwareSerial.h> // I added this library only for the Bluetooth module.
+
+byte com = 0;
 Odometer encoder;
 Gyroscope gyro;
 Car car;
@@ -60,6 +62,16 @@ void setup() {
   sensorFront.attach(frontSensor_Trig, frontSensor_Echo); // Attach The Front Sensor with its pins
   gyro.begin();                                          // Start Gyroscope counting
   car.begin(encoder, gyro);
+
+   Serial.write(0xAA);
+
+  Serial.write(0x37);
+
+  delay(1000);
+
+  Serial.write(0xAA);
+
+  Serial.write(0x21);
 }
 //---------------------------------------------------------------------------------------------------
 void loop() {
@@ -150,6 +162,23 @@ void remoteControl() {
     }
   }
 }
+
+void voiceCommand(){
+  while(Serial.available()) {
+
+  com = Serial.read();
+Serial.println(com);
+  switch(com) {
+
+      case 0x15:  
+      
+      park();
+      
+      break;
+
+            }
+      }
+  }
 
 void park() {
   Serial.println("in park...");
