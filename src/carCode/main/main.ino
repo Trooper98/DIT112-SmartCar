@@ -14,6 +14,12 @@ Servo myServo;
 /*Using the Servo to check the whole back-angle when the car is inside the parking spot.
   right side is angle 200 and back is angle 80
 */
+
+const int fSpeed = 70; //70% of the full speed forward
+const int bSpeed = -70; //70% of the full speed backward
+const int lDegrees = -75; //degrees to turn left
+const int rDegrees = 75; //degrees to turn right
+
 const int frontSensor_Trig = 44;  // Front Sensor
 const int frontSensor_Echo = 45;  // Front Sensor
 const int rightSensor_Trig = A1;  // Front-Right Sensor
@@ -124,38 +130,38 @@ void remoteControl() {
         rotateOnSpot(-20);
         break;
     }
-  } else if (Bluetooth.available()) {
+  } else  if (Bluetooth.available()) {
     char input =  Bluetooth.read(); //read everything that has been received from the bluetooth
     Serial.println(input);
     switch (input) {
 
       case 'l': //rotate counter-clockwise going forward
-        car.setSpeed(70);
-        car.setAngle(-75);
+        car.setSpeed(fSpeed);
+        car.setAngle(lDegrees);
         break;
       case 'r': //turn clock-wise
-        car.setSpeed(70);
-        car.setAngle(75);
+        car.setSpeed(fSpeed);
+        car.setAngle(rDegrees);
         break;
       case 'f': //go ahead
-        car.setSpeed(75);
+        if (isFrontFree()){
+        car.setSpeed(fSpeed);
         car.setAngle(0);
-        break;
-      case 'w': //go ahead until if there is any object in 30cm stop
-        while (distanceFront() > 30) {
-          Serial.println(distanceFront() );
-          car.setSpeed(75);
-          car.setAngle(0);
-        }
+      }
+      else {
+        car.setSpeed(0);
+      }
         break;
       case 'b': //go back
-        car.setSpeed(-70);
+         if (isBackFree()){
+        car.setSpeed(bSpeed);
         car.setAngle(0);
+      }
         break;
       case 'p': // Find an empty spot to park in it.
         //startCar is a Boolean attribute, we need it to break the loop.
         park();
-        resetDependancies();
+    resetDependancies();
         break;
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
@@ -163,6 +169,19 @@ void remoteControl() {
         car.setAngle(0);
     }
   }
+  if(car.getSpeed()<0){
+    if(distanceBack() != 0 && distanceBack() < 30){
+      car.setSpeed(0);
+      car.setAngle(0);
+    }
+  }
+ // Check for obstacles while going forward
+  else if(car.getSpeed() > 0){
+    if(distanceFront() != 0 && distanceFront() < 30){
+      car.setSpeed(0);
+      car.setAngle(0);
+       }
+    }
 }
 
 void voiceCommand() {
@@ -184,6 +203,7 @@ void park() {
   if (parking == true) {
     search();
     delay(500);
+    //callServo();
     enterParkingSpace();
     delay(500);
     correctAngle();
@@ -269,20 +289,21 @@ void enterParkingSpace() {
     delay(500);
     rotateParkingCar(-5);
     gyro.update();
-    reverse();
+    //reverse();
+    callServo();
     rotateParkingCar(5);
     enteringParkSpace = false;
   }
 }
 
 void rotateParkingCar(int angle){
-  delay(500);
+    delay(500);
     rotateOnSpot(angle);
-    delay(100);
+    delay(500);
     rotateOnSpot(angle);
-    delay(100);
+    delay(500);
     rotateOnSpot(angle);
-    delay(100);
+    delay(500);
     rotateOnSpot(angle);
     }
 
@@ -407,6 +428,91 @@ void rotateOnSpot(int targetDegrees) {
   }
   car.stop(); //we have reached the target, so stop the car
 }
+
+
+
+ boolean isBackFree(){
+  if(distanceBack() > 0 && distanceBack()> 10){
+    return true;
+    car.setSpeed(0);
+  }
+  return false;
+}
+
+ boolean isFrontFree(){
+  if(distanceFront() > 0 && distanceFront()> 10){
+    return true;
+    car.setSpeed(0);
+  }
+  return false;
+}
+
+void callServo(){ 
+  Serial.println("Call Servo");
+  /*This method will call the servo method, then if the servo method is done,
+  it will make a double check for the SensorBack distance*/ 
+  while(distanceBack()>15){ // Check the SensorBack distance if it's greater than 10 run the servo
+          if (ServoBack){
+            RunServo();
+          }
+          else if (ServoBack==false){
+          return;
+          } 
+             ServoBack == true;
+        }
+  for(int j=200;j>40;j-=5){ // The second servo's checking
+    Serial.println(j); 
+    myServo.write(j);
+    delay(30);
+    int distance = distanceBack();
+      if (distance && distance < 12) {
+          delay(20);
+           Serial.print("Check The Distance again checking "); 
+            Serial.println( distance); 
+          if (distance && distance <12) { // A double checking also
+         ServoBack == false;
+         return;
+       }
+       }      
+ }
+ 
+}
+
+void RunServo(){ 
+  for(int i=200;i>40;i-=5){ // Turn servor from right to left from angle 200 to angle 40
+  myServo.write(i);         // Move the servor to angle i
+  delay(30);                //  Wait 30 millisecond
+  int distance = distanceBack();
+      if (distance && distance < 12) {            // Check the distance each time if it less than 10 
+          delay(20);                              // Wait 20 millisecond   
+          if (distance && distance < 12) {        // A double checking also
+             ServoBack == false;                  // If it's less than 10cm return to stop the method
+             return;
+          }
+       }    
+  }
+  Serial.println("Go Back"); 
+   moveBackward();                            // If the whole objects in the given angle are greater than 10cm then call moveBackward to move backward 7cm
+  for(int i=40;i<=200;i+=5){                // Turn servor back from left to right from angle 40 to angle 200, and do same thing          
+  myServo.write(i);
+  delay(30);
+  int distance = distanceBack();
+       if (distance && distance < 12) {
+          delay(20);
+          if (distance && distance < 12) {
+         ServoBack == false;
+         return;
+       }
+       }
+  }
+}
+
+
+void moveBackward(){ // Move backword 7cm
+  car.go(-8);
+  }
+
+  
 
 //Testing--------------------------------------------------------------------------------------------------
 void correctPlacement() {
