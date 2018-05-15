@@ -39,7 +39,7 @@ boolean reversing = true;
 const int carSpeed = 40;
 const int motorSpeed = 80;
 const int carWidth = 20;
-const int carLength = 60;
+const int carLength = 40;
 const int servoBack = 80;
 const int servoRight = 200;
 const int servoPark = 150;
@@ -140,11 +140,8 @@ void remoteControl() {
         break;
       case 'p': // Find an empty spot to park in it.
         //startCar is a Boolean attribute, we need it to break the loop.
-        while (startCar) { // To keep the findPlace method works until park, we call the method in the while loop
-          park(); // Call findPlace method
-        }
-        startCar = true;
-        return;
+        park();
+        enterParkingSpace();
         break;
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
@@ -218,11 +215,12 @@ void correctAngle() {
         car.setSpeed(0);
         rotateOnSpot(1);
         delay(100);
-      } else if (back > front) {
+      }
+      /*else if (back > front) {
         car.setSpeed(0);
         rotateOnSpot(-1);
         delay(100);
-      }
+      }*/
 
       //correcting cars angle
       rightSideCar = front - back;//cars right side
@@ -245,7 +243,13 @@ void enterParkingSpace() {
     gyro.update();
     reverse();
     delay(500);
-    rotateOnSpot(20);
+    rotateOnSpot(5);
+    delay(100);
+    rotateOnSpot(5);
+    delay(100);
+    rotateOnSpot(5);
+    delay(100);
+    rotateOnSpot(5);
     enteringParkSpace = false;
   }
 }
@@ -371,8 +375,8 @@ void rotateOnSpot(int targetDegrees) {
   }
   car.stop(); //we have reached the target, so stop the car
 }
-//Testing--------------------------------------------------------------------------------------------------
 
+//Testing--------------------------------------------------------------------------------------------------
 void correctPlacement() {
   /*front back space*/
   int front = distanceFront();
@@ -419,3 +423,7 @@ void correctPlacement() {
     }
   }
 }
+void gyroControl(){
+  gyro.begin();
+  int gryoD = gyro.getAngularDisplacement();
+  }
