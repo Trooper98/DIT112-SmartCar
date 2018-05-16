@@ -164,6 +164,22 @@ void remoteControl() {
         car.setAngle(0);
       }
         break;
+      case 'z':           //To turn the car 90 degrees  to left  then move forward (only for voice command from Google API)
+         if (isBackFree()){
+          rotateOnSpot(-90);
+          delay(800);
+          car.setSpeed(fSpeed);
+          car.setAngle(0);
+      }
+        break;
+      case 'c':         //To turn the car 90 degrees  to right then move forward (only for voice command from Google API)
+         if (isBackFree()){
+          rotateOnSpot(90);
+          delay(800);
+          car.setSpeed(fSpeed);
+          car.setAngle(0);
+      }
+        break;
       case 'p': // Find an empty spot to park in it.
         //startCar is a Boolean attribute, we need it to break the loop.
         park();
@@ -175,7 +191,11 @@ void remoteControl() {
         parkWithIR();
        resetDependancies();
         break;
-        
+
+       case 'o': // Exit from the parking spot.
+        //exitParking(); // in process by Oliver
+       resetDependancies();
+        break;
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
         car.setSpeed(0);
