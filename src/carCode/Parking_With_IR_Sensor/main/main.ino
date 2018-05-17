@@ -30,6 +30,7 @@ const int backSensor_Trig = 6;  // Back Sensor
 const int backSensor_Echo = 7;  // Back Sensor
 const int encoderPin = 2;     // For Encoder
 const int ledPin = 50;
+const int IR_PIN = A5;
 
 /*global variables*/
 long duration, durationR, durationF, durationB; // To calculate the duration for each sensor, then we can know the actual distance
@@ -65,6 +66,7 @@ void setup() {
   gyro.attach();                                         // Attach the Gyroscope
   myServo.attach(A0);                                    // Attach the Servo with its pin
   encoder.attach(encoderPin);                            // Attach the Encoder with its pin
+  irSensorBack.attach(IR_PIN);
   sensorRight.attach(rightSensor_Trig, rightSensor_Echo);   // Attach The Front-Right Sensor with its pins
   sensorBack.attach(backSensor_Trig, backSensor_Echo);  // Attach The Back Sensor with its pins
   sensorFront.attach(frontSensor_Trig, frontSensor_Echo); // Attach The Front Sensor with its pins
@@ -86,15 +88,16 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //remoteControl();
+  remoteControl();
   //park();
-  voiceCommand();
+  //voiceCommand();
 
 }
 
 //---------------------------------------------------------- remoteControl() ----------------------------------------------------------
 
 void remoteControl() {
+  myServo.write(servoBack);
   if (Serial.available()) {
     Serial.println("in remote...");
     userInp = Serial.read();
@@ -184,12 +187,14 @@ void remoteControl() {
         //startCar is a Boolean attribute, we need it to break the loop.
         park();
        resetDependancies();
+        myServo.write(servoBack);
         break;
        
       case 'i': // Find an empty spot to park in it by using IR sensor.
         //startCar is a Boolean attribute, we need it to break the loop.
         parkWithIR();
-       resetDependancies();
+        resetDependancies();
+        myServo.write(servoBack);
         break;
 
        case 'o': // Exit from the parking spot.
@@ -348,11 +353,11 @@ void enterParkingSpace() {
   int count = 0;
   if (enteringParkSpace == true) {
     delay(500);
-    rotateParkingCar(-5);
+    rotateParkingCar(-8);
     gyro.update();
     //reverse();
     callServo();
-    rotateParkingCar(5);
+    rotateParkingCar(8);
     enteringParkSpace = false;
   }
 }
@@ -363,10 +368,10 @@ void enterParkingSpaceUsingIR(){
   Serial.println("in enterParkingSpaceUsingIR...");
   if (enteringParkSpace == true) {
     delay(500);
-    rotateParkingCar(-5);
+    rotateParkingCar(-8);
     gyro.update();
     checkIR();
-    rotateParkingCar(5);
+    rotateParkingCar(8);
     enteringParkSpace = false;
   }
 }
@@ -389,7 +394,7 @@ void rotateParkingCar(int angle){
 void checkIR(){ //Moving backward 6 cm with Infrared Sensor
   int irDistance = irSensorBack.getDistance();
   while(irDistance > 6 ) {    //While the distance on the back side is not equal to 6 cm
-    car.setSpeed(-25);       //Move backward with low speed as 25
+    car.setSpeed(-30);       //Move backward with low speed as 25
     irDistance = irSensorBack.getDistance();  // <-- Update Infrared Sensor
   }
   car.setSpeed(0); // Stop the car.
@@ -530,7 +535,7 @@ void callServo(){
   Serial.println("Call Servo");
   /*This method will call the servo method, then if the servo method is done,
   it will make a double check for the SensorBack distance*/ 
-  while(distanceBack()>15){ // Check the SensorBack distance if it's greater than 10 run the servo
+  while(distanceBack()>12){ // Check the SensorBack distance if it's greater than 10 run the servo
           if (ServoBack){
             RunServo();
           }
@@ -590,8 +595,8 @@ void RunServo(){
 
 //__________________________________________________________ moveBackward() __________________________________________________________
 
-void moveBackward(){ // Move backword 8cm
-  car.go(-8);
+void moveBackward(){ // Move backword 7cm
+  car.go(-7);
   }
 
 
