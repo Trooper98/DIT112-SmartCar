@@ -393,7 +393,7 @@ void rotateParkingCar(int angle){
 
 void checkIR(){ //Moving backward 6 cm with Infrared Sensor
   int irDistance = irSensorBack.getDistance();
-  while(irDistance > 6 ) {    //While the distance on the back side is not equal to 6 cm
+  while(irDistance > 5 ) {    //While the distance on the back side is not equal to 5 cm
     car.setSpeed(-30);       //Move backward with low speed as 25
     irDistance = irSensorBack.getDistance();  // <-- Update Infrared Sensor
   }
