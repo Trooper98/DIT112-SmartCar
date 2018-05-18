@@ -256,6 +256,37 @@ void park() {
     parking = false;
   }
 }
+//---------------------------------------------------------- perpendicularPark() ----------------------------------------------------------
+void perpendicularPark() {
+  if (distanceRight() == 0 || distanceRight() > 20) {
+    Serial.println("If");
+    encoder.begin();
+    car.setMotorSpeed(50, 50);
+    while (distanceRight() == 0 || distanceRight() > 20) {
+      if (encoder.getDistance() > 12) {
+        car.setSpeed(0);
+        gyro.begin();
+        delay(500);
+        car.setSpeed(50);
+        moveBackward();
+        Serial.println("Before go backward");
+        delay(500);
+        car.setSpeed(50);
+        rotateOnSpot(90);
+        car.go(5);
+        car.setSpeed(0);
+        delay(500);
+        Serial.println("After go forward");
+        car.setSpeed(0);
+        exit(0);
+      }
+    }
+  }
+  else {
+    Serial.println("Else");
+    car.setMotorSpeed(50, 50);
+  }
+}
 
 //__________________________________________________________ parkWithIR() __________________________________________________________
 
