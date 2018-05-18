@@ -90,54 +90,32 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   remoteControl();
-  //park();
-  //voiceCommand();
-
 }
 
 //---------------------------------------------------------- remoteControl() ----------------------------------------------------------
 
 void remoteControl() {
   myServo.write(servoBack);
+  //__________________________________________________________ voiceCommand() __________________________________________________________
   if (Serial.available()) {
-    Serial.println("in remote...");
-    userInp = Serial.read();
-    switch (userInp) {
-      case 'w'://forward
-        moveCar(10, 50);
-        resetDependancies();
-        break;
-      case 'a'://left
-        car.setSpeed(0);
-        gyro.update();
-        rotateOnSpot(-25);
-        resetDependancies();
-        break;
-      case 'd'://right
-        car.setSpeed(0);
-        gyro.update();
-        rotateOnSpot(25);
-        resetDependancies();
-        break;
-      case 's'://backwards
-        moveCar(10, -50);
-        resetDependancies();
-        break;
-      case 'p'://park
-        resetDependancies();
+    Serial.println("in voice command");
+    com = Serial.read();
+    Serial.println(com);
+    switch (com) {
+      // to do parallel parking
+      case 0x11:
         park();
-        break;
-      case 'r'://rotate car in park mode
         resetDependancies();
-        search();
         break;
-      case 'e':
+        // to do perpendicular parking
+      case 0x12:
+        perpendicularPark();
         resetDependancies();
-        enterParkingSpace();
         break;
-      case 'c':
-        resetDependancies();
+        // to exit parking
+      case 0x13:
         exitParking();
+        resetDependancies();
         break;
     }
   } else  if (Bluetooth.available()) {//======================================= Bluetooth Control() ===================================
@@ -228,21 +206,6 @@ void remoteControl() {
   }
 }
 
-//__________________________________________________________ voiceCommand() __________________________________________________________
-
-void voiceCommand() {
-  while (Serial.available()) {
-    Serial.println("in voice command");
-    com = Serial.read();
-    Serial.println(com);
-    switch (com) {
-      case 0x15:
-        park();
-        resetDependancies();
-        break;
-    }
-  }
-}
 
 //---------------------------------------------------------- park() ----------------------------------------------------------
 
