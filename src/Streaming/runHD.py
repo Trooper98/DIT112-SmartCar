@@ -20,6 +20,7 @@ import logging
 import socketserver
 from threading import Condition
 from http import server
+import serial
 
 PAGE="""\
 <html>
@@ -94,6 +95,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
+
+arduinoSerialData = serial.Serial("/dev/serial/by-id/usb-Arduino_Srl_Arduino_Mega_75435353038351F06192-if00",9600)
+#where we tell the car to do stuff
+while (True):
+    print("Options:")
+    print("w Forward")
+    print("a Left")
+    print("d Right")
+    print("s Backward")
+    print("p Park")
+    serialCommand = input("Serial Variable: ")
+    arduinoSerialData.write(serialCommand.encode())
+
 
 with picamera.PiCamera(resolution='1080x720', framerate=30) as camera:
     output = StreamingOutput()
