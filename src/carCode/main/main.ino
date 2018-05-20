@@ -387,9 +387,6 @@ void rotateParkingCar(int angle){
     delay(900);
     gyro.update();
     rotateOnSpot(angle);
-    delay(900);
-    gyro.update();
-    rotateOnSpot(angle);
 }
 
 //__________________________________________________________ checkIR() __________________________________________________________
