@@ -95,7 +95,7 @@ void loop() {
 //---------------------------------------------------------- remoteControl() ----------------------------------------------------------
 
 void remoteControl() {
-    myServo.write(servoBack);
+  myServo.write(servoBack);
   //__________________________________________________________ voiceCommand() __________________________________________________________
   if (Serial.available()) {
     Serial.println("in voice command");
@@ -107,18 +107,56 @@ void remoteControl() {
         park();
         resetDependancies();
         break;
-        // to do perpendicular parking
+      // to do perpendicular parking
       case 0x12:
         perpendicularPark();
         resetDependancies();
         break;
-        // to exit parking
+      // to exit parking
       case 0x13:
         exitParking();
         resetDependancies();
         break;
+
+      //commands from RPi
+
+      //MoveForward
+      case 'w':
+        moveCar(10, 50);
+        resetDependancies();
+        break;
+
+      //TurnLeft
+      case 'a':
+        car.setSpeed(0);
+        gyro.update();
+        rotateOnSpot(-25);
+        resetDependancies;
+        break;
+
+      //TurnRight
+      case 'd':
+        car.setSpeed(0);
+        gyro.update();
+        rotateOnSpot(-25);
+        resetDependancies;
+        break;
+
+      //MoveBackward
+      case 's':
+        moveCar(10, -50);
+        resetDependancies();
+        break;
+
+      //Park
+      case 'q':
+        resetDependancies();
+        park();
+        break;
+
+
     }
-  }else  if (Bluetooth.available()) {//======================================= Bluetooth Control() ===================================
+  } else  if (Bluetooth.available()) {//======================================= Bluetooth Control() ===================================
     char input =  Bluetooth.read(); //read everything that has been received from the bluetooth
     Serial.println(input);
     switch (input) {
@@ -147,29 +185,29 @@ void remoteControl() {
         }
         break;
       case 'z':           //To turn the car 90 degrees  to left  then move forward (only for voice command from Google API)
-         if (isBackFree()){
+        if (isBackFree()) {
           rotateOnSpot(-90);
           delay(800);
           car.setSpeed(fSpeed);
           car.setAngle(0);
-      }
+        }
         break;
       case 'c':         //To turn the car 90 degrees  to right then move forward (only for voice command from Google API)
-         if (isBackFree()){
+        if (isBackFree()) {
           rotateOnSpot(90);
           delay(800);
           car.setSpeed(fSpeed);
           car.setAngle(0);
-      }
+        }
         break;
       case 'p': // Find an empty spot to park in it.
         //startCar is a Boolean attribute, we need it to break the loop.
         park();
 
-       resetDependancies();
+        resetDependancies();
         myServo.write(servoBack);
         break;
-       
+
       case 'i': // Find an empty spot to park in it by using IR sensor.
         //startCar is a Boolean attribute, we need it to break the loop.
         parkWithIR();
@@ -177,10 +215,10 @@ void remoteControl() {
         myServo.write(servoBack);
         break;
 
-       case 'o': // Exit from the parking spot.
+      case 'o': // Exit from the parking spot.
         //exitParking(); // in process by Oliver
-       exitParking();
-       resetDependancies();
+        exitParking();
+        resetDependancies();
         break;
       // In all cases I put the letter "s" as the stop case ((default case))
       default: //if you receive something that you don't know, just stop
@@ -188,18 +226,18 @@ void remoteControl() {
         car.setAngle(0);
     }
   }
-   
-   // Check for obstacles while going backward
-  if(car.getSpeed()<0){
-    if(distanceBack() != 0 && distanceBack() < 30){
+
+  // Check for obstacles while going backward
+  if (car.getSpeed() < 0) {
+    if (distanceBack() != 0 && distanceBack() < 30) {
       car.setSpeed(0);
       car.setAngle(0);
     }
   }
-  
- // Check for obstacles while going forward
-  else if(car.getSpeed() > 0){
-    if(distanceFront() != 0 && distanceFront() < 30){
+
+  // Check for obstacles while going forward
+  else if (car.getSpeed() > 0) {
+    if (distanceFront() != 0 && distanceFront() < 30) {
       car.setSpeed(0);
       car.setAngle(0);
     }
@@ -216,7 +254,7 @@ void park() {
     delay(500);
     enterParkingSpace();
     delay(500);
-   // correctAngle();
+    // correctAngle();
     delay(500);
     moveForward();
     parking = false;
@@ -256,8 +294,8 @@ void perpendicularPark() {
 
 //__________________________________________________________ parkWithIR() __________________________________________________________
 
-void parkWithIR(){
-   Serial.println("in parkWithIR...");
+void parkWithIR() {
+  Serial.println("in parkWithIR...");
   if (parking == true) {
     search();
     delay(500);
@@ -274,7 +312,7 @@ void parkWithIR(){
 
 void search() {
   Serial.println("in search...");
- // correctAngle();
+  // correctAngle();
   int rightSpace;
   int rightLenght;
   while (searching == true) {
@@ -361,13 +399,13 @@ void enterParkingSpace() {
 
 //__________________________________________________________ enterParkingSpaceUsingIR() __________________________________________________________
 
-void enterParkingSpaceUsingIR(){
+void enterParkingSpaceUsingIR() {
   Serial.println("in enterParkingSpaceUsingIR...");
   if (enteringParkSpace == true) {
     delay(500);
     gyro.update();
     rotateParkingCar(-8);
-     moveBackward();
+    moveBackward();
     checkIR();
     gyro.update();
     rotateParkingCar(8);
@@ -377,28 +415,28 @@ void enterParkingSpaceUsingIR(){
 
 //---------------------------------------------------------- rotateParkingCar(int angle) ----------------------------------------------------------
 
-void rotateParkingCar(int angle){
-    delay(900);
-    gyro.update();
-    rotateOnSpot(angle);
-    delay(900);
-    gyro.update();
-    rotateOnSpot(angle);
-    delay(900);
-    gyro.update();
-    rotateOnSpot(angle);
+void rotateParkingCar(int angle) {
+  delay(900);
+  gyro.update();
+  rotateOnSpot(angle);
+  delay(900);
+  gyro.update();
+  rotateOnSpot(angle);
+  delay(900);
+  gyro.update();
+  rotateOnSpot(angle);
 }
 
 //__________________________________________________________ checkIR() __________________________________________________________
 
-void checkIR(){ //Moving backward 6 cm with Infrared Sensor
+void checkIR() { //Moving backward 6 cm with Infrared Sensor
   int irDistance = irSensorBack.getDistance();
-  while(irDistance > 6 ) {    //While the distance on the back side is not equal to 6 cm
+  while (irDistance > 6 ) {   //While the distance on the back side is not equal to 6 cm
     car.setSpeed(-35);       //Move backward with low speed as 35
     irDistance = irSensorBack.getDistance();  // <-- Update Infrared Sensor
   }
   car.setSpeed(0); // Stop the car.
-  delay(500); // Wait 20 millisecond 
+  delay(500); // Wait 20 millisecond
 }
 
 //---------------------------------------------------------- reverse() ----------------------------------------------------------
@@ -512,102 +550,102 @@ void resetDependancies() {
 
 //__________________________________________________________ isBackFree() __________________________________________________________
 
-boolean isBackFree(){ //To check the distance in the Backside of the car while car moving
-  if(distanceBack() > 0 && distanceBack()> 30){
+boolean isBackFree() { //To check the distance in the Backside of the car while car moving
+  if (distanceBack() > 0 && distanceBack() > 30) {
     return true;
     car.setSpeed(0);
   }
-return false;
+  return false;
 }
 
 //---------------------------------------------------------- isFrontFree() ----------------------------------------------------------
 
-boolean isFrontFree(){ //To check the distance in the Frontside of the car while car moving
-  if(distanceFront() > 0 && distanceFront()> 30){
+boolean isFrontFree() { //To check the distance in the Frontside of the car while car moving
+  if (distanceFront() > 0 && distanceFront() > 30) {
     return true;
     car.setSpeed(0);
   }
-return false;
+  return false;
 }
 
 //__________________________________________________________ callServo() __________________________________________________________
 
-void callServo(){ 
+void callServo() {
   Serial.println("Call Servo");
   /*This method will call the servo method, then if the servo method is done,
-  it will make a double check for the SensorBack distance*/ 
+    it will make a double check for the SensorBack distance*/
   moveBackwardTen();
-  
-  while(distanceBack()>12){ // Check the SensorBack distance if it's greater than 10 run the servo
-          if (ServoBack){
-            RunServo();
-          }
-          else if (ServoBack==false){
-          return;
-          } 
-             ServoBack == true;
-        }
-  for(int j=200;j>40;j-=5){ // The second servo's checking
-    Serial.println(j); 
+
+  while (distanceBack() > 12) { // Check the SensorBack distance if it's greater than 10 run the servo
+    if (ServoBack) {
+      RunServo();
+    }
+    else if (ServoBack == false) {
+      return;
+    }
+    ServoBack == true;
+  }
+  for (int j = 200; j > 40; j -= 5) { // The second servo's checking
+    Serial.println(j);
     myServo.write(j);
     delay(30);
     int distance = distanceBack();
-      if (distance && distance < 12) {
-          delay(20);
-           Serial.print("Check The Distance again checking "); 
-            Serial.println( distance); 
-          if (distance && distance <12) { // A double checking also
-         ServoBack == false;
-         return;
-       }
-       }      
+    if (distance && distance < 12) {
+      delay(20);
+      Serial.print("Check The Distance again checking ");
+      Serial.println( distance);
+      if (distance && distance < 12) { // A double checking also
+        ServoBack == false;
+        return;
+      }
+    }
   }
- 
+
 }
 
 //---------------------------------------------------------- RunServo() ----------------------------------------------------------
 
-void RunServo(){ 
-  for(int i=200;i>40;i-=5){                       // Turn servor from right to left from angle 200 to angle 40
-  myServo.write(i);                               // Move the servor to angle i
-  delay(30);                                      //  Wait 30 millisecond
-  int distance = distanceBack();
-      if (distance && distance < 12) {            // Check the distance each time if it less than 10 
-         delay(20);                               // Wait 20 millisecond   
-          if (distance && distance < 12) {        // A double checking also
-             ServoBack == false;                  // If it's less than 10cm return to stop the method
-           return;
-          }
-       }    
+void RunServo() {
+  for (int i = 200; i > 40; i -= 5) {             // Turn servor from right to left from angle 200 to angle 40
+    myServo.write(i);                               // Move the servor to angle i
+    delay(30);                                      //  Wait 30 millisecond
+    int distance = distanceBack();
+    if (distance && distance < 12) {            // Check the distance each time if it less than 10
+      delay(20);                               // Wait 20 millisecond
+      if (distance && distance < 12) {        // A double checking also
+        ServoBack == false;                  // If it's less than 10cm return to stop the method
+        return;
+      }
+    }
   }
-  Serial.println("Move Backward"); 
+  Serial.println("Move Backward");
   moveBackward();                            // If the whole objects in the given angle are greater than 10cm then call moveBackward to move backward 7cm
-  for(int i=40;i<=200;i+=5){                 // Turn servor back from left to right from angle 40 to angle 200, and do same thing          
-  myServo.write(i);
-  delay(30);
-  int distance = distanceBack();
+  for (int i = 40; i <= 200; i += 5) {       // Turn servor back from left to right from angle 40 to angle 200, and do same thing
+    myServo.write(i);
+    delay(30);
+    int distance = distanceBack();
+    if (distance && distance < 12) {
+      delay(20);
       if (distance && distance < 12) {
-         delay(20);
-          if (distance && distance < 12) {
-            ServoBack == false;
-          return;
-       }
-       }
+        ServoBack == false;
+        return;
+      }
+    }
   }
 }
 
 //__________________________________________________________ moveBackward() __________________________________________________________
 
-void moveBackward(){ // Move backword 5cm
+void moveBackward() { // Move backword 5cm
   moveCar(5, -50);
   mover = true;
 }
-void moveForward(){ // Move forkword 5cm
-   moveCar(5, 50);
+void moveForward() { // Move forkword 5cm
+  moveCar(5, 50);
   mover = true;
 }
-void moveBackwardTen(){ // Move forkword 10cm
-   moveCar(10, -50);
+void moveBackwardTen() { // Move forkword 10cm
+  moveCar(10, -50);
   mover = true;
 }
 
@@ -661,7 +699,7 @@ void exitParking() {
       rotateParkingCar(-8);
       moveCar(carLength, 35);
       rotateParkingCar(8);
-     // correctAngle();
+      // correctAngle();
       delay(500);
       exitPark = false;
     } else {
