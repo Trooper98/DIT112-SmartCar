@@ -1,5 +1,5 @@
 # DIT112-SmartCar
-This is a course project that uses [@platisd] (https://github.com/platisd) 's [smartcar_shield arduino library] (https://github.com/platisd/smartcar_shield).
+This is a course project that uses [@platisd](https://github.com/platisd) 's [smartcar_shield arduino library](https://github.com/platisd/smartcar_shield).
 
 ## What is does
 Features include:
@@ -45,5 +45,5 @@ Materials needed include:
 4. When code finishes running successfully, start the car. 
 
 ## Aditional info
-If you have difficulties setting up the vehicle, I suggest taking a look at the [smartcar_shield  library] (https://github.com/platisd/smartcar_shield) repository that I mentioned above since it inlcude fantastic documentation!
+If you have difficulties setting up the vehicle, I suggest taking a look at the [smartcar_shield  library](https://github.com/platisd/smartcar_shield) repository that I mentioned above since it inlcude fantastic documentation!
     
